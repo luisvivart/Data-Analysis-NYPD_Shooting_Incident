@@ -1,0 +1,143 @@
+---
+title: "NYPD Shooting Incident Data"
+author: "Luis Vivar"
+date: '2022-03-27'
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This report will be looking at the historical shooting incidence data from NYPD. We will be getting the data from this website https://catalog.data.gov/dataset. The file name will be “NYPD Shooting Incident Data (Historic)”.
+
+
+# Libraries
+```{r library, message=FALSE, warning=FALSE}
+# install.packages("tidyverse")
+library(tidyverse)
+library(lubridate)
+```
+
+# Data
+```  {r get_data, echo = FALSE}
+url_in <- "https://data.cityofnewyork.us/api/views/833y-fsy8/rows.csv?accessType=DOWNLOAD"
+file_names <- c("NYPD_Shooting_Incident_Data__Historic_.csv")
+```
+
+``` {r import_data, message = FALSE}
+data_report <- read_csv(url_in[1])
+```
+
+# Summary and Clean up Data
+``` {r}
+summary(data_report)
+```
+
+``` {r tidy_global_data}
+data_report <- data_report %>%
+  select(-c(PRECINCT, JURISDICTION_CODE, PERP_AGE_GROUP, PERP_SEX, PERP_RACE, LOCATION_DESC, Latitude, Longitude, X_COORD_CD, Y_COORD_CD, Lon_Lat))
+```
+
+# Data Visualization and Analysis
+
+
+##1. Which age group was the most affected during this incident?
+
+The age group most affected by this New York incident was people between the ages of 25 and 44.
+
+```{r}
+age_report = data_report %>%
+  group_by(VIC_AGE_GROUP) %>%
+  count()
+age_report
+
+incident_graph <- ggplot(data_report, aes(x = VIC_AGE_GROUP)) +
+  geom_bar() +
+  labs(title = "Number of Incidents per Age Group", 
+       x = "Age Groups",
+       y = "Number of Incidents") +
+  theme_minimal()
+incident_graph
+```
+
+##2. Which sex reported the most casualties?
+Between the two sexes, males seem to have been the most affected by almost 10 times as much as females.
+
+```{r}
+sex_report = data_report %>%
+  group_by(VIC_SEX) %>%
+  count()
+sex_report
+```
+
+```{r}
+incident_graph_2 <- ggplot(sex_report, aes(x = VIC_SEX, y = n)) +
+  geom_col() +
+  labs(title = "GENDER AND CASUALTIES",
+       x = "Incident Occurence Hour",
+       y = "Count of Incidents") +
+  theme_minimal()
+incident_graph_2
+```
+
+
+##3. Which day and time should people in New York be cautious of falling into victims of crime?
+
+* Weekends in NYC have the most chances of incidents. Be cautious! 
+* Incidents historically happen in the evening and night time. If there's nothing urgent, recommend people staying at home! 
+
+```{r}
+data_report$OCCUR_DAY = mdy(data_report$OCCUR_DATE)
+data_report$OCCUR_DAY = wday(data_report$OCCUR_DAY, label = TRUE)
+data_report$OCCUR_HOUR = hour(hms(as.character(data_report$OCCUR_TIME)))
+
+df_3 = data_report %>%
+  group_by(OCCUR_DAY) %>%
+  count()
+
+df_4 = data_report %>%
+  group_by(OCCUR_HOUR) %>%
+  count()
+```
+
+```{r}
+g <- ggplot(df_3, aes(x = OCCUR_DAY, y = n)) +
+  geom_col() +
+  labs(title = "Most Dangerous Days in NYC",
+       x = "Incident Occurence Day",
+       y = "Count of Incidents") +
+  theme_minimal()
+g
+```
+```{r}
+g <- ggplot(df_4, aes(x = OCCUR_HOUR, y = n)) +
+  geom_area() +
+  labs(title = "Time of the day with the most incidents",
+       x = "Time of Day",
+       y = "Number of Incidents") +
+  theme_minimal()
+g
+```
+
+
+##4.Which one is the most dangerous of the boroughs?
+
+Brooklyn is the most dangerous of all the boroughs in NYC, followed then by Bronx and Queens.
+
+```{r}
+g <- ggplot(data_report, aes(x = BORO)) +
+  geom_bar() +
+  labs(title = "Boroughs of New York City",
+       x = "Boroughs of New York City",
+       y = "Count of Incidents") +
+  theme_minimal()
+g
+```
+
+
+##Bias
+This data deals a whole lot with race, gender, age, and city of residence of individuals. All these variables could lead to major prejudice and bias towards the analysis of this information. I, personally, for example, am not a fan of New York City. Neither do I like the stereotypical attitude portrayed by New York citizens. This could definitely lower the significance of importance that I give to the present data, and could, not only undermine the results, but also, every single piece of data that would take me there.
